@@ -1,0 +1,10 @@
+env
+venv
+data
+__pycache__
+models
+*.ipynb
+*.png
+*.pdf
+*.svg
+sentiment_model_graph
