@@ -1,6 +1,4 @@
-import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'transformer')))
 
 import torch
 from torch.optim import AdamW
@@ -8,7 +6,7 @@ from torch.nn import CrossEntropyLoss
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # from model import SentimentCNNBiLSTM
-from transformer import Transformer
+from transformer.transformer import Transformer
 from dataset import train_dataloader, val_dataloader, test_dataloader
 from train import train_epoch, eval_model, get_predictions
 

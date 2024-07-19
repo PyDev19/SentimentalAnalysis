@@ -1,6 +1,6 @@
 from torch import nn, Tensor
-from multihead_attention import MultiHeadAttention
-from feedforward import FeedForward
+from transformer.multihead_attention import MultiHeadAttention
+from transformer.feedforward import FeedForward
 
 class Decoder(nn.Module):
     def __init__(self, dimensions: int, heads: int, hidden_dim: int, dropout: float):

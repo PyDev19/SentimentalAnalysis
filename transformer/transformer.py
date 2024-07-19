@@ -1,9 +1,9 @@
 from typing import Tuple
 import torch
 from torch import nn, Tensor
-from encoder import Encoder
-from decoder import Decoder
-from positional_encoding import PositionalEncoding
+from transformer.encoder import Encoder
+from transformer.decoder import Decoder
+from transformer.positional_encoding import PositionalEncoding
 
 class Transformer(nn.Module):
     def __init__(
