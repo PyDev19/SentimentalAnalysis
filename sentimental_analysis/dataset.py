@@ -1,6 +1,10 @@
 import torch
 import pandas as pd
+from pandarallel import pandarallel
 from torch.utils.data import Dataset, DataLoader, random_split
+from ast import literal_eval
+
+pandarallel.initialize(progress_bar=True)
 
 class SentimentDataset(Dataset):
     def __init__(self, inputs, labels):
@@ -20,6 +24,7 @@ class SentimentDataset(Dataset):
 
 print('Loading data...', end=' ')
 data = pd.read_csv('data/balanced_preprocessed_data.csv')
+data['input_ids'] = data['input_ids'].parallel_apply(literal_eval)
 print('Data loaded')
 
 print('Splitting data...', end=' ')
