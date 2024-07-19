@@ -11,18 +11,26 @@ def train_epoch(model, dataloader, loss_fn, optimizer, device):
     for batch in tqdm(dataloader, desc='Training', leave=False):
         input_ids = batch['input_ids'].to(device)
         labels = batch['label'].to(device)
+        
+        # Prepare target sequences (in this case, labels are sentiment labels 0-6)
+        target_input = labels.unsqueeze(1)  # Reshape labels to 2D tensor
+        target_input = target_input.expand(-1, input_ids.size(1))  # Expand to match input_ids sequence length
+        target_output = target_input  # Target output is the same in this case
 
-        outputs = model(input_ids)
-        _, preds = torch.max(outputs, dim=1)
-        loss = loss_fn(outputs, labels)
-
-        correct_predictions += torch.sum(preds == labels)
+        outputs = model(input_ids, target_input)
+        outputs = outputs.view(-1, outputs.shape[-1])
+        target_output = target_output.reshape(-1)
+        
+        loss = loss_fn(outputs, target_output)
         losses.append(loss.item())
 
         loss.backward()
         clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
+
+        _, preds = torch.max(outputs, dim=1)
+        correct_predictions += torch.sum(preds == target_output)
 
     return correct_predictions.double() / len(dataloader.dataset), np.mean(losses)
 
