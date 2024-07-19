@@ -1,6 +1,6 @@
 import torch
+import pandas as pd
 from torch.utils.data import Dataset, DataLoader, random_split
-from preprocessing import data
 
 class SentimentDataset(Dataset):
     def __init__(self, inputs, labels):
@@ -17,6 +17,10 @@ class SentimentDataset(Dataset):
             'input_ids': torch.tensor(input_ids, dtype=torch.long),
             'label': torch.tensor(label, dtype=torch.long)
         }
+
+print('Loading data...', end=' ')
+data = pd.read_csv('data/balanced_preprocessed_data.csv')
+print('Data loaded')
 
 print('Splitting data...', end=' ')
 dataset = SentimentDataset(data['input_ids'], data['label'])
