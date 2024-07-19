@@ -1,10 +1,14 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'transformer')))
+
 import torch
-from torch.optim import Adam
+from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from model import SentimentCNNBiLSTM
-from preprocessing import vocab
+# from model import SentimentCNNBiLSTM
+from transformer import Transformer
 from dataset import train_dataloader, val_dataloader, test_dataloader
 from train import train_epoch, eval_model, get_predictions
 
@@ -15,20 +19,27 @@ if device == 'cpu':
     torch.set_num_threads(16)
 else:
     torch.backends.cudnn.benchmark = True
+    
+vocab = torch.load('models/vocab.pth')
 
-VOCAB_SIZE = len(vocab)
-EMBEDDING_DIM = 100
-CONV_FILTERS = 128
-LSTM_HIDDEN_DIM = 128
-OUTPUT_DIM = 6
-DROPOUT = 0.5
+SOURCE_VOCAB_SIZE = len(vocab)
+TARGET_VOCAB_SIZE = 7
+DIMENSIONS = 512
+HEADS = 8
+LAYERS = 6
+HIDDEN_DIMENSIONS = 2048
+MAX_SEQ_LEN = 512
+DROPOUT = 0.1
 LEARNING_RATE = 1e-4
-EPOCHS = 20
+EPOCHS = 10
 
-model = SentimentCNNBiLSTM(VOCAB_SIZE, EMBEDDING_DIM, CONV_FILTERS, LSTM_HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
-model = model.to(device)
-optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
-loss_fn = CrossEntropyLoss().to(device)
+# model = SentimentCNNBiLSTM(VOCAB_SIZE, EMBEDDING_DIM, CONV_FILTERS, LSTM_HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
+# model = model.to(device)
+
+model = Transformer(SOURCE_VOCAB_SIZE, TARGET_VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, DROPOUT)
+
+optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
+loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=0, verbose=True)
 
 train_losses = []
