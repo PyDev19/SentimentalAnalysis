@@ -1,9 +1,9 @@
 import math
 import torch
-from torch import nn
+from torch import nn, Tensor
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, dimensions, max_seq_length):
+    def __init__(self, dimensions: int, max_seq_length: int):
         """
         Initialize the PositionalEncoding class.
 
@@ -25,5 +25,14 @@ class PositionalEncoding(nn.Module):
 
         self.register_buffer('pe', self.pe.unsqueeze(0)) # register the positional encoding as a buffer
         
-    def forward(self, x):
-        return x + self.pe[:, :x.size(1)] # add the positional encoding to the input tensor
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Applies the positional encoding to the input tensor.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The input tensor with positional encoding added.
+        """
+        return x + self.pe[:, :x.size(1)]  # add the positional encoding to the input tensor

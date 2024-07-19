@@ -1,8 +1,8 @@
 import torch
-from torch import nn
+from torch import nn, Tensor
 
 class FeedForward(nn.Module):
-    def __init__(self, dimensions, hidden_dim):
+    def __init__(self, dimensions: int, hidden_dim: int):
         """
         Initialize the FeedForward module.
 
@@ -16,7 +16,7 @@ class FeedForward(nn.Module):
         self.relu = nn.ReLU() # ReLU activation function
         self.linear_2 = nn.Linear(hidden_dim, dimensions) # linear layer for the second layer
     
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         """
         Performs the forward pass of the feedforward network.
 

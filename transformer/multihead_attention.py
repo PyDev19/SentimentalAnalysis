@@ -1,8 +1,9 @@
+from typing import Optional
 import torch
-from torch import nn
+from torch import nn, Tensor
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, dimensions, heads):
+    def __init__(self, dimensions: int, heads: int):
         """
         Initialize the MultiHeadAttention module.
 
@@ -24,7 +25,7 @@ class MultiHeadAttention(nn.Module):
         self.output = nn.Linear(dimensions, dimensions) # linear layer for output
         
     
-    def scaled_dot_product_attention(self, query, key, value, mask=None):
+    def scaled_dot_product_attention(self, query: Tensor, key: Tensor, value: Tensor, mask: Optional[Tensor] = None):
         """
         Compute scaled dot product attention.
 
@@ -36,7 +37,7 @@ class MultiHeadAttention(nn.Module):
                 If provided, the attention scores will be masked with -inf where the mask is 0.
 
         Returns:
-            torch.Tensor: The output tensor of shape (batch_size, num_heads, query_length, head_dim).
+            Tensor: The output tensor of shape (batch_size, num_heads, query_length, head_dim).
 
         """
         scores = torch.matmul(query, key.transpose(-2, -1)) / torch.sqrt(self.head_dim) # matrix multiplication of query and key to get attention scores
@@ -48,7 +49,7 @@ class MultiHeadAttention(nn.Module):
         output = torch.matmul(attention, value) # matrix multiplication of attention and value to get output
         return output
     
-    def split_heads(self, x):
+    def split_heads(self, x: Tensor) -> Tensor:
         """
         Split the input tensor into multiple heads.
 
@@ -62,7 +63,7 @@ class MultiHeadAttention(nn.Module):
         batch_size, seq_length, dimensions = x.size() # get the batch size, sequence length, and model dimensions of x to split the heads
         return x.view(batch_size, seq_length, self.heads, self.head_dim).transpose(1, 2) # split the heads and transpose the dimensions
 
-    def combine_heads(self, x):
+    def combine_heads(self, x: Tensor) -> Tensor:
         """
         Combines the multiple heads back to the original shape.
 
@@ -75,7 +76,7 @@ class MultiHeadAttention(nn.Module):
         batch_size, _, seq_length, dimensions = x.size()
         return x.transpose(1, 2).contiguous().view(batch_size, seq_length, self.dimensions)
 
-    def forward(self, Q, K, V, mask=None):
+    def forward(self, Q: Tensor, K: Tensor, V: Tensor, mask: Optional[Tensor]=None) -> Tensor:
         """
         Perform forward pass of the multi-head attention layer.
 
