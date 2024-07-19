@@ -1,10 +1,9 @@
-import torch
-from torch import nn
+from torch import nn, Tensor
 from multihead_attention import MultiHeadAttention
 from feedforward import FeedForward
 
 class Encoder(nn.Module):
-    def __init__(self, dimensions, heads, hidden_dim, dropout):
+    def __init__(self, dimensions: int, heads: int, hidden_dim: int, dropout: float):
         """
         Initializes the Encoder module of the Transformer model.
 
@@ -24,7 +23,7 @@ class Encoder(nn.Module):
         self.feedforward = FeedForward(dimensions, hidden_dim) # feedforward layer
         self.norm_2 = nn.LayerNorm(dimensions) # second normalization layer
 
-    def forward(self, x, mask):
+    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
         """
         Forward pass of the encoder layer.
 
