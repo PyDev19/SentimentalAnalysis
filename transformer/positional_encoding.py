@@ -3,17 +3,27 @@ import torch
 from torch import nn
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_seq_length):
+    def __init__(self, dimensions, max_seq_length):
+        """
+        Initialize the PositionalEncoding class.
+
+        Args:
+            dimensions (int): The dimensionality of the model.
+            max_seq_length (int): The maximum sequence length.
+
+        Returns:
+            None
+        """
         super(PositionalEncoding, self).__init__()
-        
-        self.pe = torch.zeros(max_seq_length, d_model)
-        position = torch.arange(0, max_seq_length, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(math.log(10000.0) / d_model))
-        
-        self.pe[:, 0::2] = torch.sin(position * div_term)
-        self.pe[:, 1::2] = torch.cos(position * div_term)
-        
-        self.register_buffer('pe', self.pe.unsqueeze(0))
+
+        self.pe = torch.zeros(max_seq_length, dimensions) # initialize the positional encoding matrix
+        position = torch.arange(0, max_seq_length, dtype=torch.float).unsqueeze(1) # create a tensor with values from 0 to max_seq_length
+        div_term = torch.exp(torch.arange(0, dimensions, 2).float() * -(math.log(10000.0) / dimensions)) # create a tensor with values from 0 to d_model, multiplied by -log(10000) and exponentiated
+
+        self.pe[:, 0::2] = torch.sin(position * div_term) # fill the even indices with the sine of the position multiplied by div_term
+        self.pe[:, 1::2] = torch.cos(position * div_term) # fill the odd indices with the cosine of the position multiplied by div_term
+
+        self.register_buffer('pe', self.pe.unsqueeze(0)) # register the positional encoding as a buffer
         
     def forward(self, x):
-        return x + self.pe[:, :x.size(1)]
+        return x + self.pe[:, :x.size(1)] # add the positional encoding to the input tensor
