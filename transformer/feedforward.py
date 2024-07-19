@@ -12,9 +12,9 @@ class FeedForward(nn.Module):
         """
         super(FeedForward, self).__init__()
 
-        self.linear_1 = nn.Linear(dimensions, hidden_dim)
-        self.relu = nn.ReLU()
-        self.linear_2 = nn.Linear(hidden_dim, dimensions)
+        self.linear_1 = nn.Linear(dimensions, hidden_dim) # linear layer for the first layer
+        self.relu = nn.ReLU() # ReLU activation function
+        self.linear_2 = nn.Linear(hidden_dim, dimensions) # linear layer for the second layer
     
     def forward(self, x):
         """
@@ -26,7 +26,7 @@ class FeedForward(nn.Module):
         Returns:
             torch.Tensor: The output tensor.
         """
-        x = self.linear_1(x)
-        x = self.relu(x)
-        x = self.linear_2(x)
+        x = self.linear_1(x) # linear transformation
+        x = self.relu(x) # ReLU activation
+        x = self.linear_2(x) # linear transformation
         return x
