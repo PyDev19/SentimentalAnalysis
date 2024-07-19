@@ -1,15 +1,8 @@
 import torch
 from torch import nn
 from torch.nn.functional import relu 
-from torch.optim import AdamW
-from torch.nn import CrossEntropyLoss
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.utils.data import DataLoader
 
-from sklearn.base import BaseEstimator, ClassifierMixin
-from preprocessing import vocab
-from dataset import train_dataset, val_dataset, test_dataset
-from train import train_epoch, eval_model, get_predictions
+vocab = torch.load('models/vocab.pth')
 
 class Attention(nn.Module):
     def __init__(self, lstm_hidden_dim):
