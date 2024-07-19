@@ -1,3 +1,4 @@
+import math
 from typing import Optional
 import torch
 from torch import nn, Tensor
@@ -40,7 +41,7 @@ class MultiHeadAttention(nn.Module):
             Tensor: The output tensor of shape (batch_size, num_heads, query_length, head_dim).
 
         """
-        scores = torch.matmul(query, key.transpose(-2, -1)) / torch.sqrt(self.head_dim) # matrix multiplication of query and key to get attention scores
+        scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.head_dim) # matrix multiplication of query and key to get attention scores
 
         if mask is not None: # if mask is not None, fill the scores with -inf
             scores = scores.masked_fill(mask == 0, float('-inf'))

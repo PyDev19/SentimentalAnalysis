@@ -92,5 +92,4 @@ class Transformer(nn.Module):
             decoder_output = decoder_layer(decoder_output, encoder_output, source_mask, target_mask) # pass the decoder, source, and target masks to the decoder layer
 
         output = self.linear(decoder_output) # apply linear layer to the decoder output
-        output = self.softmax(output) # apply softmax to the output
         return output # return the output tensor
