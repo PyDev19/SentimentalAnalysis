@@ -20,8 +20,8 @@ else:
     
 vocab = torch.load(f'models/vocab.pth')
 
-SOURCE_VOCAB_SIZE = len(vocab)
-TARGET_VOCAB_SIZE = 7
+VOCAB_SIZE = len(vocab)
+CLASSES = 7
 DIMENSIONS = 512
 HEADS = 8
 LAYERS = 6
@@ -34,7 +34,7 @@ EPOCHS = 10
 # model = SentimentCNNBiLSTM(VOCAB_SIZE, EMBEDDING_DIM, CONV_FILTERS, LSTM_HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
 # model = model.to(device)
 
-model = Transformer(SOURCE_VOCAB_SIZE, TARGET_VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, DROPOUT, device).to(device)
+model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
 
 optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
 loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
