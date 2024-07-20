@@ -44,7 +44,7 @@ def eval_model(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, dev
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
 
-            outputs = model(input_ids, labels)
+            outputs = model(input_ids)
             outputs = outputs.view(-1, outputs.shape[-1]).to(device)
             labels = labels.view(-1)
             
