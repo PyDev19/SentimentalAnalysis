@@ -15,7 +15,8 @@ class Transformer(nn.Module):
         layers: int,
         hidden_dimensions: int,
         max_seq_length: int,
-        dropout: float
+        dropout: float,
+        device: torch.device
     ):
         """
         Initializes a Transformer model.
@@ -37,7 +38,7 @@ class Transformer(nn.Module):
 
         self.encoder_embedding = nn.Embedding(source_vocab_size, dimensions) # embedding layer for the encoder
         self.decoder_embedding = nn.Embedding(target_vocab_size, dimensions) # embedding layer for the decoder
-        self.positional_encoding = PositionalEncoding(dimensions, max_seq_length) # positional encoding layer
+        self.positional_encoding = PositionalEncoding(dimensions, max_seq_length, device) # positional encoding layer
 
         self.encoder_layers = nn.ModuleList([Encoder(dimensions, heads, hidden_dimensions, dropout) for _ in range(layers)]) # list of encoder layers
         self.decoder_layers = nn.ModuleList([Decoder(dimensions, heads, hidden_dimensions, dropout) for _ in range(layers)]) # list of decoder layers
@@ -45,6 +46,8 @@ class Transformer(nn.Module):
         self.linear = nn.Linear(dimensions, target_vocab_size) # linear layer for the output
         self.dropout = nn.Dropout(dropout) # dropout layer
         self.softmax = nn.Softmax(dim=-1) # softmax layer
+        
+        self.device = device # device to run the model on
     
     def generate_mask(self, source: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
         """
@@ -57,12 +60,12 @@ class Transformer(nn.Module):
         Returns:
             Tuple[Tensor, Tensor]: A tuple containing the source mask and target mask.
         """
-        source_mask = (source != 0).unsqueeze(1).unsqueeze(2) # create a mask for the source tensor
-        target_mask = (target != 0).unsqueeze(1).unsqueeze(3) # create a mask for the target tensor
+        source_mask = (source != 0).unsqueeze(1).unsqueeze(2).to(self.device) # create a mask for the source tensor
+        target_mask = (target != 0).unsqueeze(1).unsqueeze(3).to(self.device) # create a mask for the target tensor
 
         seq_length = target.size(1) # get the sequence length from 2nd dimension of target tensor
 
-        nopeak_mask = (1 - torch.triu(torch.ones(1, seq_length, seq_length), diagonal=1)).bool() # create a mask for the target tensor
+        nopeak_mask = (1 - torch.triu(torch.ones(1, seq_length, seq_length), diagonal=1)).bool().to(self.device) # create a mask for the target tensor
         target_mask = target_mask & nopeak_mask # combine the target mask with the nopeak mask
 
         return source_mask, target_mask # return the source and target masks
@@ -78,6 +81,7 @@ class Transformer(nn.Module):
         Returns:
             Tensor: Output tensor after passing through the Transformer model.
         """
+        source, target = source.to(self.device), target.to(self.device) # ensure source and target are on the correct device
         source_mask, target_mask = self.generate_mask(source, target) # generate the source and target masks
 
         source_embedded = self.dropout(self.positional_encoding(self.encoder_embedding(source))) # apply dropout, positional encoding, and embedding to the source tensor
