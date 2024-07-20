@@ -4,7 +4,7 @@ from torch import nn, Tensor
 from transformer.encoder import Encoder
 from transformer.positional_encoding import PositionalEncoding
 
-class TransformerForSentimentAnalysis(nn.Module):
+class Transformer(nn.Module):
     def __init__(
         self,
         vocab_size: int,
@@ -33,7 +33,7 @@ class TransformerForSentimentAnalysis(nn.Module):
         Returns:
             None
         """
-        super(TransformerForSentimentAnalysis, self).__init__()
+        super(Transformer, self).__init__()
 
         self.embedding = nn.Embedding(vocab_size, dimensions)  # embedding layer
         self.positional_encoding = PositionalEncoding(dimensions, max_seq_length, device)  # positional encoding layer
