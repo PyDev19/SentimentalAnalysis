@@ -1,28 +1,25 @@
 import numpy as np
 import torch
-from torch import Tensor
 from torch.nn.utils import clip_grad_norm_
 from tqdm import tqdm
+from torch.utils.data import DataLoader
+from typing import Tuple, List
+from torch import nn, optim, Tensor
 
-def train_epoch(model, dataloader, loss_fn, optimizer, device):
+def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device) -> Tuple[float, float]:
     model.train()
-    losses = []
-    correct_predictions = 0
+    losses: List[float] = []
+    correct_predictions: int = 0
 
     for batch in tqdm(dataloader, desc='Training', leave=False):
         input_ids = batch['input_ids'].to(device)
-        labels: Tensor = batch['label'].to(device)
-        
-        # Prepare target sequences (in this case, labels are sentiment labels 0-6)
-        target_input = labels.unsqueeze(1).to(device)  # Reshape labels to 2D tensor
-        target_input = target_input.expand(-1, input_ids.size(1)).to(device)  # Expand to match input_ids sequence length
-        target_output = target_input  # Target output is the same in this case
+        labels = batch['label'].to(device)
 
-        outputs = model(input_ids, target_input).to(device)
-        outputs = outputs.view(-1, outputs.shape[-1]).to(device)
-        target_output = target_output.reshape(-1).to(device)
+        outputs = model(input_ids)
+        outputs = outputs.view(-1, outputs.shape[-1])
+        labels = labels.view(-1)
         
-        loss = loss_fn(outputs, target_output)
+        loss = loss_fn(outputs, labels)
         losses.append(loss.item())
 
         loss.backward()
@@ -31,40 +28,47 @@ def train_epoch(model, dataloader, loss_fn, optimizer, device):
         optimizer.zero_grad(set_to_none=True)
 
         _, preds = torch.max(outputs, dim=1)
-        correct_predictions += torch.sum(preds == target_output)
+        correct_predictions += torch.sum(preds == labels)
 
-    return correct_predictions.double() / len(dataloader.dataset), np.mean(losses)
+    accuracy = correct_predictions.double() / len(dataloader.dataset)
+    average_loss = np.mean(losses)
+    return accuracy, average_loss
 
-def eval_model(model, dataloader, loss_fn, device):
+def eval_model(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, device: torch.device) -> Tuple[float, float]:
     model.eval()
-    losses = []
-    correct_predictions = 0
+    losses: List[float] = []
+    correct_predictions: int = 0
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='Validation', leave=False):
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
 
-            outputs = model(input_ids)
+            outputs = model(input_ids, labels)
+            outputs = outputs.view(-1, outputs.shape[-1]).to(device)
+            labels = labels.view(-1)
+            
             _, preds = torch.max(outputs, dim=1)
             loss = loss_fn(outputs, labels)
 
             correct_predictions += torch.sum(preds == labels)
             losses.append(loss.item())
 
-    return correct_predictions.double() / len(dataloader.dataset), np.mean(losses)
+    accuracy = correct_predictions.double() / len(dataloader.dataset)
+    average_loss = np.mean(losses)
+    return accuracy, average_loss
 
 
-def get_predictions(model, dataloader, device):
+def get_predictions(model: nn.Module, dataloader: DataLoader, device: torch.device) -> Tuple[Tensor, Tensor]:
     model.eval()
-    predictions = []
-    real_values = []
+    predictions: List[Tensor] = []
+    real_values: List[Tensor] = []
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='Testing', leave=False):
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
-
+            
             outputs = model(input_ids)
             _, preds = torch.max(outputs, dim=1)
 
