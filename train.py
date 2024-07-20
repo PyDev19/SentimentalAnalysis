@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch import Tensor
 from torch.nn.utils import clip_grad_norm_
 from tqdm import tqdm
 
@@ -10,16 +11,16 @@ def train_epoch(model, dataloader, loss_fn, optimizer, device):
 
     for batch in tqdm(dataloader, desc='Training', leave=False):
         input_ids = batch['input_ids'].to(device)
-        labels = batch['label'].to(device)
+        labels: Tensor = batch['label'].to(device)
         
         # Prepare target sequences (in this case, labels are sentiment labels 0-6)
-        target_input = labels.unsqueeze(1)  # Reshape labels to 2D tensor
-        target_input = target_input.expand(-1, input_ids.size(1))  # Expand to match input_ids sequence length
+        target_input = labels.unsqueeze(1).to(device)  # Reshape labels to 2D tensor
+        target_input = target_input.expand(-1, input_ids.size(1)).to(device)  # Expand to match input_ids sequence length
         target_output = target_input  # Target output is the same in this case
 
-        outputs = model(input_ids, target_input)
-        outputs = outputs.view(-1, outputs.shape[-1])
-        target_output = target_output.reshape(-1)
+        outputs = model(input_ids, target_input).to(device)
+        outputs = outputs.view(-1, outputs.shape[-1]).to(device)
+        target_output = target_output.reshape(-1).to(device)
         
         loss = loss_fn(outputs, target_output)
         losses.append(loss.item())
