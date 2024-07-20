@@ -76,5 +76,8 @@ torch.save(label_encoder, 'models/label_encoder.pth')
 print('Labels encoded')
 
 print('Saving preprocessed data...', end=' ')
+if not os.path.exists('data'):
+    os.makedirs('data')
+
 data.to_csv('data/preprocessed_data.csv', index=False)
 print('Data saved')
