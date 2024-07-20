@@ -2,98 +2,81 @@ from typing import Tuple
 import torch
 from torch import nn, Tensor
 from transformer.encoder import Encoder
-from transformer.decoder import Decoder
 from transformer.positional_encoding import PositionalEncoding
 
-class Transformer(nn.Module):
+class TransformerForSentimentAnalysis(nn.Module):
     def __init__(
         self,
-        source_vocab_size: int,
-        target_vocab_size: int,
+        vocab_size: int,
         dimensions: int,
         heads: int,
         layers: int,
         hidden_dimensions: int,
         max_seq_length: int,
+        num_classes: int,
         dropout: float,
         device: torch.device
     ):
         """
-        Initializes a Transformer model.
+        Initializes a Transformer model for sentiment analysis.
 
         Args:
-            source_vocab_size (int): The size of the source vocabulary.
-            target_vocab_size (int): The size of the target vocabulary.
+            vocab_size (int): The size of the vocabulary.
             dimensions (int): The dimensionality of the input and output embeddings.
             heads (int): The number of attention heads.
-            layers (int): The number of encoder and decoder layers.
+            layers (int): The number of encoder layers.
             hidden_dimensions (int): The dimensionality of the hidden layer in the feed-forward network.
             max_seq_length (int): The maximum sequence length.
+            num_classes (int): The number of output classes (sentiments).
             dropout (float): The dropout probability.
 
         Returns:
             None
         """
-        super(Transformer, self).__init__()
+        super(TransformerForSentimentAnalysis, self).__init__()
 
-        self.encoder_embedding = nn.Embedding(source_vocab_size, dimensions) # embedding layer for the encoder
-        self.decoder_embedding = nn.Embedding(target_vocab_size, dimensions) # embedding layer for the decoder
-        self.positional_encoding = PositionalEncoding(dimensions, max_seq_length, device) # positional encoding layer
+        self.embedding = nn.Embedding(vocab_size, dimensions)  # embedding layer
+        self.positional_encoding = PositionalEncoding(dimensions, max_seq_length, device)  # positional encoding layer
 
-        self.encoder_layers = nn.ModuleList([Encoder(dimensions, heads, hidden_dimensions, dropout) for _ in range(layers)]) # list of encoder layers
-        self.decoder_layers = nn.ModuleList([Decoder(dimensions, heads, hidden_dimensions, dropout) for _ in range(layers)]) # list of decoder layers
+        self.encoder_layers = nn.ModuleList([Encoder(dimensions, heads, hidden_dimensions, dropout) for _ in range(layers)])  # list of encoder layers
 
-        self.linear = nn.Linear(dimensions, target_vocab_size) # linear layer for the output
-        self.dropout = nn.Dropout(dropout) # dropout layer
-        self.softmax = nn.Softmax(dim=-1) # softmax layer
+        self.fc = nn.Linear(dimensions, num_classes)  # linear layer for the output
+        self.dropout = nn.Dropout(dropout)  # dropout layer
         
-        self.device = device # device to run the model on
+        self.device = device  # device to run the model on
     
-    def generate_mask(self, source: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
+    def generate_mask(self, source: Tensor) -> Tensor:
         """
-        Generate masks for the source and target tensors.
+        Generate masks for the source tensor.
 
         Args:
             source (Tensor): The source tensor.
-            target (Tensor): The target tensor.
 
         Returns:
-            Tuple[Tensor, Tensor]: A tuple containing the source mask and target mask.
+            Tensor: The source mask.
         """
-        source_mask = (source != 0).unsqueeze(1).unsqueeze(2).to(self.device) # create a mask for the source tensor
-        target_mask = (target != 0).unsqueeze(1).unsqueeze(3).to(self.device) # create a mask for the target tensor
+        source_mask = (source != 0).unsqueeze(1).unsqueeze(2).to(self.device)  # create a mask for the source tensor
+        return source_mask  # return the source mask
 
-        seq_length = target.size(1) # get the sequence length from 2nd dimension of target tensor
-
-        nopeak_mask = (1 - torch.triu(torch.ones(1, seq_length, seq_length), diagonal=1)).bool().to(self.device) # create a mask for the target tensor
-        target_mask = target_mask & nopeak_mask # combine the target mask with the nopeak mask
-
-        return source_mask, target_mask # return the source and target masks
-
-    def forward(self, source: Tensor, target: Tensor) -> Tensor:
+    def forward(self, source: Tensor) -> Tensor:
         """
-        Forward pass of the Transformer model.
+        Forward pass of the Transformer model for sentiment analysis.
 
         Args:
             source (Tensor): Input source tensor.
-            target (Tensor): Input target tensor.
 
         Returns:
             Tensor: Output tensor after passing through the Transformer model.
         """
-        source, target = source.to(self.device), target.to(self.device) # ensure source and target are on the correct device
-        source_mask, target_mask = self.generate_mask(source, target) # generate the source and target masks
+        source = source.to(self.device)  # ensure source is on the correct device
+        source_mask = self.generate_mask(source)  # generate the source mask
 
-        source_embedded = self.dropout(self.positional_encoding(self.encoder_embedding(source))) # apply dropout, positional encoding, and embedding to the source tensor
-        target_embedded = self.dropout(self.positional_encoding(self.decoder_embedding(target))) # apply dropout, positional encoding, and embedding to the target tensor
+        source_embedded = self.dropout(self.positional_encoding(self.embedding(source)))  # apply dropout, positional encoding, and embedding to the source tensor
 
-        encoder_output = source_embedded # set the encoder output to the source tensor
-        for encoder_layer in self.encoder_layers: # iterate through the encoder layers
-            encoder_output = encoder_layer(encoder_output, source_mask) # pass the encoder and source mask to the encoder layer
+        encoder_output = source_embedded  # set the encoder output to the source tensor
+        for encoder_layer in self.encoder_layers:  # iterate through the encoder layers
+            encoder_output = encoder_layer(encoder_output, source_mask)  # pass the encoder and source mask to the encoder layer
 
-        decoder_output = target_embedded # set the decoder output to the target tensor
-        for decoder_layer in self.decoder_layers: # iterate through the decoder layers
-            decoder_output = decoder_layer(decoder_output, encoder_output, source_mask, target_mask) # pass the decoder, source, and target masks to the decoder layer
-
-        output = self.linear(decoder_output) # apply linear layer to the decoder output
-        return output # return the output tensor
+        encoder_output = encoder_output.mean(dim=1)  # global average pooling
+        output = self.fc(encoder_output)  # apply linear layer to the encoder output
+        return output  # return the output tensor
