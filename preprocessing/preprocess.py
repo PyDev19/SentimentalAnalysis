@@ -6,12 +6,14 @@ from tqdm import tqdm
 import os
 import torch
 
+data_path = input('Enter the path to the data: ')
+
 print('Loading data...', end=' ')
-data = pd.read_csv('data/text.csv').dropna().drop('Unnamed: 0', axis=1)
+data = pd.read_csv(f'{data_path}/text.csv').dropna().drop('Unnamed: 0', axis=1)
 data['label'] = data['label'] + 1
 
-reddit_data = pd.read_csv('data/Reddit_Data.csv').dropna()
-twitter_data = pd.read_csv('data/Twitter_Data.csv').dropna()
+reddit_data = pd.read_csv(f'{data_path}/Reddit_Data.csv').dropna()
+twitter_data = pd.read_csv(f'{data_path}/Twitter_Data.csv').dropna()
 
 reddit_data.columns = ['text', 'label']
 twitter_data.columns = ['text', 'label']
