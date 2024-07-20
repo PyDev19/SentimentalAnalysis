@@ -18,8 +18,7 @@ if device == 'cpu':
 else:
     torch.backends.cudnn.benchmark = True
     
-vocab_path = input('Enter the path to the vocab.pth file: ')
-vocab = torch.load(f'{vocab_path}/vocab.pth')
+vocab = torch.load(f'models/vocab.pth')
 
 SOURCE_VOCAB_SIZE = len(vocab)
 TARGET_VOCAB_SIZE = 7

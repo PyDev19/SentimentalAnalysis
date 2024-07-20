@@ -23,11 +23,10 @@ class SentimentDataset(Dataset):
             'label': torch.tensor(label, dtype=torch.long)
         }
 
-data_path = input('Enter the path to the preprocessed data: ')
 batch_size = int(input('Enter the batch size: '))
 
 print('Loading data...', end=' ')
-data = pd.read_csv(f'{data_path}/balanced_preprocessed_data.csv')
+data = pd.read_csv('data/balanced_preprocessed_data.csv')
 print('Data loaded')
 
 print('Splitting data...', end=' ')
