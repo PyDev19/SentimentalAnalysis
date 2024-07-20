@@ -16,6 +16,7 @@ class SentimentDataset(Dataset):
 
     def __getitem__(self, idx):
         input_ids = self.inputs[idx]
+        input_ids = literal_eval(input_ids)
         label = self.labels[idx]
         return {
             'input_ids': torch.tensor(input_ids, dtype=torch.long),
@@ -23,10 +24,10 @@ class SentimentDataset(Dataset):
         }
 
 data_path = input('Enter the path to the preprocessed data: ')
+batch_size = int(input('Enter the batch size: '))
 
 print('Loading data...', end=' ')
 data = pd.read_csv(f'{data_path}/balanced_preprocessed_data.csv')
-data['input_ids'] = data['input_ids'].parallel_apply(literal_eval)
 print('Data loaded')
 
 print('Splitting data...', end=' ')
@@ -46,8 +47,8 @@ print(f"Test size: {test_size} ({test_size/len(dataset)*100:.2f}%)")
 print()
 
 print('Creating dataloaders...', end=' ')
-train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-val_dataloader = DataLoader(val_dataset, batch_size=16, shuffle=False)
-test_dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 print('Dataloaders created')
 print()
