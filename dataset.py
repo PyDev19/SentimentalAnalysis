@@ -23,7 +23,7 @@ class SentimentDataset(Dataset):
 batch_size = int(input('Enter the batch size: '))
 
 print('Loading data...', end=' ')
-data = pd.read_csv('data/balanced_preprocessed_data.csv')
+data = pd.read_csv('data/preprocessed_data.csv')
 print('Data loaded')
 
 print('Splitting data...', end=' ')
