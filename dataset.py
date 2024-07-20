@@ -1,10 +1,7 @@
 import torch
 import pandas as pd
-from pandarallel import pandarallel
 from torch.utils.data import Dataset, DataLoader, random_split
 from ast import literal_eval
-
-pandarallel.initialize(progress_bar=True)
 
 class SentimentDataset(Dataset):
     def __init__(self, inputs, labels):
