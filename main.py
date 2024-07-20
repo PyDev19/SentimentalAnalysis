@@ -18,7 +18,8 @@ if device == 'cpu':
 else:
     torch.backends.cudnn.benchmark = True
     
-vocab = torch.load('models/vocab.pth')
+vocab_path = input('Enter the path to the vocab.pth file: ')
+vocab = torch.load(f'{vocab_path}/vocab.pth')
 
 SOURCE_VOCAB_SIZE = len(vocab)
 TARGET_VOCAB_SIZE = 7
@@ -34,7 +35,7 @@ EPOCHS = 10
 # model = SentimentCNNBiLSTM(VOCAB_SIZE, EMBEDDING_DIM, CONV_FILTERS, LSTM_HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
 # model = model.to(device)
 
-model = Transformer(SOURCE_VOCAB_SIZE, TARGET_VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, DROPOUT)
+model = Transformer(SOURCE_VOCAB_SIZE, TARGET_VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, DROPOUT, device).to(device)
 
 optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
 loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
