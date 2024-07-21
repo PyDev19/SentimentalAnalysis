@@ -3,18 +3,11 @@ import os
 import torch
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
-import torch_xla
-import torch_xla.distributed.parallel_loader as pl
-import torch_xla.core.xla_model as xm
-import torch_xla.distributed.xla_multiprocessing as xmp
 
 from tqdm import tqdm
 
 from transformer.transformer import Transformer
-from dataset import train_dataloader, val_dataloader, test_dataloader
 from train import train_epoch, eval_model, get_predictions
-
-print(torch_xla._XLAC._xla_runtime_is_initialized())
 
 use_tpu = input('Use TPU? (y/n): ')
 use_tpu = use_tpu.lower() == 'y'
@@ -29,10 +22,16 @@ LAYERS = 6
 HIDDEN_DIMENSIONS = 2048
 MAX_SEQ_LEN = 209
 DROPOUT = 0.1
-LEARNING_RATE = 1e-4 * xm.xrt_world_size()
+LEARNING_RATE = 1e-4
 
 def train_tpu(rank, flags):
+    import torch_xla.distributed.parallel_loader as pl
+    import torch_xla.core.xla_model as xm
+    from dataset import train_dataloader, val_dataloader
+    
     device = xm.xla_device()
+    
+    LEARNING_RATE = 1e-4 * xm.xrt_world_size()
     
     model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
@@ -85,6 +84,10 @@ def train_tpu(rank, flags):
     }, 'models/train_history.pth')
     
 def test_tpu(rank, flags):
+    import torch_xla.distributed.parallel_loader as pl
+    import torch_xla.core.xla_model as xm
+    from dataset import test_dataloader
+    
     device = xm.xla_device()
     
     model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
@@ -139,6 +142,7 @@ def normal_train():
 
 if __name__ == '__main__':
     if use_tpu:
+        import torch_xla.distributed.xla_multiprocessing as xmp
         xmp.spawn(train_and_test_tpu, nprocs=8, start_method='fork', args=({},))
     else:
         normal_train()

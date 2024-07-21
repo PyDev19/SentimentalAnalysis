@@ -5,9 +5,10 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from typing import Tuple, List
 from torch import nn, optim, Tensor
-import torch_xla.core.xla_model as xm
 
-def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device) -> Tuple[float, float]:    
+def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device) -> Tuple[float, float]:
+    import torch_xla.core.xla_model as xm
+    
     model.train()
     losses: List[float] = []
     correct_predictions: int = 0
