@@ -43,19 +43,26 @@ def train_tpu(rank, flags):
     learning_rates = []
     
     epochs = int(input('Enter the number of epochs: '))
-    for epoch in tqdm(range(epochs), desc='Epochs', leave=True):
+    for epoch in range(epochs):
+        if xm.is_master_ordinal():
+            print(f'Epoch {epoch + 1}/{epochs}')
+        
         train_dataloader = pl.ParallelLoader(train_dataloader, [device])
         val_dataloader = pl.ParallelLoader(val_dataloader, [device])
         
         train_acc, train_loss = train_epoch(model, train_dataloader.per_device_loader(device), loss_fn, optimizer, device)
         del train_dataloader
-        print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
+        
+        if xm.is_master_ordinal():
+            print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
         train_losses.append(train_loss)
 
         val_acc, val_loss = eval_model(model, val_dataloader.per_device_loader(device), loss_fn, device)
         del val_dataloader
-        print(f'Val loss: {val_loss}, Accuracy: {val_acc}')
-        print()
+        
+        if xm.is_master_ordinal():
+            print(f'Val loss: {val_loss}, Accuracy: {val_acc}')
+            print()
 
         # scheduler.step(val_loss)
 
@@ -96,7 +103,8 @@ def test_tpu(rank, flags):
     accuracy = eval_model(model, test_dataloader.per_device_loader(device), loss_fn, device)
     del test_dataloader
     
-    print(f'Test accuracy: {accuracy}')
+    if xm.is_master_ordinal():
+        print(f'Test accuracy: {accuracy}')
 
 def train_and_test_tpu(rank, flags):
     train_tpu(rank, flags)
