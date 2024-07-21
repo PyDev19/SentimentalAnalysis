@@ -4,6 +4,7 @@ import torch
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from tqdm import tqdm
 
 # from model import SentimentCNNBiLSTM
 from transformer.transformer import Transformer
@@ -26,7 +27,7 @@ DIMENSIONS = 512
 HEADS = 8
 LAYERS = 6
 HIDDEN_DIMENSIONS = 2048
-MAX_SEQ_LEN = 512
+MAX_SEQ_LEN = 209
 DROPOUT = 0.1
 LEARNING_RATE = 1e-4
 EPOCHS = 10
@@ -36,9 +37,9 @@ EPOCHS = 10
 
 model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
 
-optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
+optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
 loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
-scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=0, verbose=True)
+# scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=0, verbose=True)
 
 train_losses = []
 train_accs = []
@@ -46,10 +47,7 @@ val_losses = []
 val_accs = []
 learning_rates = []
 
-for epoch in range(EPOCHS):
-    print(f'Epoch {epoch + 1}/{EPOCHS}')
-    print('-' * 10)
-
+for epoch in tqdm(range(EPOCHS), desc='Epochs', leave=True):
     train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device)
     print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
     train_losses.append(train_loss)
@@ -58,7 +56,7 @@ for epoch in range(EPOCHS):
     print(f'Val loss: {val_loss}, Accuracy: {val_acc}')
     print()
 
-    scheduler.step(val_loss)
+    # scheduler.step(val_loss)
 
     train_losses.append(train_loss)
     train_accs.append(train_acc)
