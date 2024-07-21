@@ -3,36 +3,18 @@ import os
 import torch
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-import torch_xla
-import torch_xla.debug.metrics as met
-import torch_xla.utils.utils as xu
 import torch_xla.distributed.parallel_loader as pl
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
-import torch_xla.test.test_utils as test_utils
 
 from tqdm import tqdm
 
-# from model import SentimentCNNBiLSTM
 from transformer.transformer import Transformer
 from dataset import train_dataloader, val_dataloader, test_dataloader
 from train import train_epoch, eval_model, get_predictions
 
 use_tpu = input('Use TPU? (y/n): ')
 use_tpu = use_tpu.lower() == 'y'
-
-if not use_tpu:
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"Using device: {device}")
-
-    if device == 'cpu':
-        torch.set_num_threads(16)
-    else:
-        torch.backends.cudnn.benchmark = True
-else:
-    device = xm.xla_device()
-    print(f"Using device: {device}")
     
 vocab = torch.load(f'models/vocab.pth')
 
@@ -45,25 +27,22 @@ HIDDEN_DIMENSIONS = 2048
 MAX_SEQ_LEN = 209
 DROPOUT = 0.1
 LEARNING_RATE = 1e-4 * xm.xrt_world_size()
-EPOCHS = 10
 
-# model = SentimentCNNBiLSTM(VOCAB_SIZE, EMBEDDING_DIM, CONV_FILTERS, LSTM_HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
-# model = model.to(device)
-
-model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
-
-optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
-loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
-# scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=0, verbose=True)
-
-train_losses = []
-train_accs = []
-val_losses = []
-val_accs = []
-learning_rates = []
-
-def train_fn():
-    for epoch in tqdm(range(EPOCHS), desc='Epochs', leave=True):
+def train_tpu():
+    device = xm.xla_device()
+    
+    model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
+    optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
+    loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
+    
+    train_losses = []
+    train_accs = []
+    val_losses = []
+    val_accs = []
+    learning_rates = []
+    
+    epochs = int(input('Enter the number of epochs: '))
+    for epoch in tqdm(range(epochs), desc='Epochs', leave=True):
         train_dataloader = pl.ParallelLoader(train_dataloader, [device])
         val_dataloader = pl.ParallelLoader(val_dataloader, [device])
         
@@ -84,30 +63,76 @@ def train_fn():
         val_losses.append(val_loss)
         val_accs.append(val_acc)
         learning_rates.append(optimizer.param_groups[0]['lr'])
+    
+    model.to('cpu')
+    optimizer.to('cpu')
+    
+    import os
+    if not os.path.exists('models'):
+        os.makedirs('models')
 
-xmp.spawn(train_fn, nprocs=8)
-
-def test_fn():
+    torch.save(model, 'models/sentiment_model.pth')
+    torch.save(optimizer, 'models/sentiment_optimizer.pth')
+    torch.save({
+        'train_losses': train_losses,
+        'train_accs': train_accs,
+        'val_losses': val_losses,
+        'val_accs': val_accs,
+        'learning_rates': learning_rates
+    }, 'models/train_history.pth')
+    
+def test_tpu():
+    device = xm.xla_device()
+    
+    model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
+    loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
+    
     test_dataloader = pl.ParallelLoader(test_dataloader, [device])
     accuracy = eval_model(model, test_dataloader.per_device_loader(device), loss_fn, device)
     del test_dataloader
+    
     print(f'Test accuracy: {accuracy}')
 
-xmp.spawn(test_fn, nprocs=8)
+def normal_train():
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using device: {device}")
 
-model.to('cpu')
-optimizer.to('cpu')
+    if device == 'cpu':
+        torch.set_num_threads(16)
+    else:
+        torch.backends.cudnn.benchmark = True
+    
+    model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
+    optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
+    loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
+    
+    train_losses = []
+    train_accs = []
+    val_losses = []
+    val_accs = []
+    learning_rates = []
+    
+    epochs = int(input('Enter the number of epochs: '))
+    for epoch in tqdm(range(epochs), desc='Epochs', leave=True):
+        train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device)
+        print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
+        train_losses.append(train_loss)
 
-import os
-if not os.path.exists('models'):
-    os.makedirs('models')
+        val_acc, val_loss = eval_model(model, val_dataloader, loss_fn, device)
+        print(f'Val loss: {val_loss}, Accuracy: {val_acc}')
+        print()
 
-torch.save(model, 'models/sentiment_model.pth')
-torch.save(optimizer, 'models/sentiment_optimizer.pth')
-torch.save({
-    'train_losses': train_losses,
-    'train_accs': train_accs,
-    'val_losses': val_losses,
-    'val_accs': val_accs,
-    'learning_rates': learning_rates
-}, 'models/train_history.pth')
+        # scheduler.step(val_loss)
+
+        train_losses.append(train_loss)
+        train_accs.append(train_acc)
+        val_losses.append(val_loss)
+        val_accs.append(val_acc)
+        learning_rates.append(optimizer.param_groups[0]['lr'])
+
+if __name__ == '__main__':
+    if use_tpu:
+        xmp.spawn(train_tpu, nprocs=8)
+        xmp.spawn(test_tpu, nprocs=8)
+    else:
+        normal_train()
