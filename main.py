@@ -28,7 +28,7 @@ MAX_SEQ_LEN = 209
 DROPOUT = 0.1
 LEARNING_RATE = 1e-4 * xm.xrt_world_size()
 
-def train_tpu():
+def train_tpu(rank, flags):
     device = xm.xla_device()
     
     model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
@@ -81,7 +81,7 @@ def train_tpu():
         'learning_rates': learning_rates
     }, 'models/train_history.pth')
     
-def test_tpu():
+def test_tpu(rank, flags):
     device = xm.xla_device()
     
     model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
@@ -92,6 +92,10 @@ def test_tpu():
     del test_dataloader
     
     print(f'Test accuracy: {accuracy}')
+
+def train_and_test_tpu(rank, flags):
+    train_tpu(rank, flags)
+    test_tpu(rank, flags)
 
 def normal_train():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -132,7 +136,6 @@ def normal_train():
 
 if __name__ == '__main__':
     if use_tpu:
-        xmp.spawn(train_tpu, nprocs=8)
-        xmp.spawn(test_tpu, nprocs=8)
+        xmp.spawn(train_and_test_tpu, nprocs=8, start_method='fork', args=({},))
     else:
         normal_train()
