@@ -3,7 +3,6 @@ import pandas as pd
 from torch.utils.data import Dataset, DataLoader, random_split
 from torch.utils.data.distributed import DistributedSampler
 from ast import literal_eval
-import torch_xla.core.xla_model as xm
 
 class SentimentDataset(Dataset):
     def __init__(self, inputs, labels):
@@ -44,16 +43,9 @@ print(f"Validation size: {val_size} ({val_size/len(dataset)*100:.2f}%)")
 print(f"Test size: {test_size} ({test_size/len(dataset)*100:.2f}%)")
 print()
 
-print('Creating samplers...', end=' ')
-train_sampler = DistributedSampler(train_dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal(), shuffle=True)
-val_sampler = DistributedSampler(val_dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal(), shuffle=False)
-test_sampler = DistributedSampler(test_dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal(), shuffle=False)
-print('Samplers created')
-print()
-
 print('Creating dataloaders...', end=' ')
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler, drop_last=True, num_workers=0)
-val_dataloader = DataLoader(val_dataset, batch_size=batch_size, sampler=val_sampler, drop_last=True, num_workers=0)
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size, sampler=test_sampler, drop_last=True, num_workers=0)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, num_workers=2)
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size, drop_last=True, num_workers=2)
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True, num_workers=2)
 print('Dataloaders created')
 print()
