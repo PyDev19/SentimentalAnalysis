@@ -6,9 +6,7 @@ from torch.utils.data import DataLoader
 from typing import Tuple, List
 from torch import nn, optim, Tensor
 
-def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device) -> Tuple[float, float]:
-    import torch_xla.core.xla_model as xm
-    
+def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device) -> Tuple[float, float]:    
     model.train()
     losses: List[float] = []
     correct_predictions: int = 0
@@ -28,8 +26,7 @@ def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, op
 
         loss.backward()
         clip_grad_norm_(model.parameters(), max_norm=1.0)
-        # optimizer.step()
-        xm.optimizer_step(optimizer)
+        optimizer.step()
 
         _, preds = torch.max(outputs, dim=1)
         correct_predictions += torch.sum(preds == labels)

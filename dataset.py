@@ -22,6 +22,8 @@ class SentimentDataset(Dataset):
             'label': torch.tensor(label, dtype=torch.long)
         }
 
+batch_size = int(input('Enter the batch size: '))
+
 print('Loading data...', end=' ')
 data = pd.read_csv('data/preprocessed_data.csv')
 print('Data loaded')
@@ -50,8 +52,8 @@ print('Samplers created')
 print()
 
 print('Creating dataloaders...', end=' ')
-train_dataloader = DataLoader(train_dataset, batch_size=32, sampler=train_sampler, drop_last=True, num_workers=0)
-val_dataloader = DataLoader(val_dataset, batch_size=32, sampler=val_sampler, drop_last=True, num_workers=0)
-test_dataloader = DataLoader(test_dataset, batch_size=32, sampler=test_sampler, drop_last=True, num_workers=0)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler, drop_last=True, num_workers=0)
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size, sampler=val_sampler, drop_last=True, num_workers=0)
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, sampler=test_sampler, drop_last=True, num_workers=0)
 print('Dataloaders created')
 print()
