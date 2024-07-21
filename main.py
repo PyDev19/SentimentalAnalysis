@@ -42,7 +42,7 @@ def train_tpu(rank, flags):
     val_accs = []
     learning_rates = []
     
-    epochs = int(input('Enter the number of epochs: '))
+    epochs = 10
     for epoch in range(epochs):
         if xm.is_master_ordinal():
             print(f'Epoch {epoch + 1}/{epochs}')
