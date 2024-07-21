@@ -63,8 +63,8 @@ val_accs = []
 learning_rates = []
 
 for epoch in tqdm(range(EPOCHS), desc='Epochs', leave=True):
-    train_dataloader = pl.MpDeviceLoader(train_dataloader, [device])
-    val_dataloader = pl.MpDeviceLoader(val_dataloader, [device])
+    train_dataloader = pl.ParallelLoader(train_dataloader, [device])
+    val_dataloader = pl.ParallelLoader(val_dataloader, [device])
     
     train_acc, train_loss = train_epoch(model, train_dataloader.per_device_loader(device), loss_fn, optimizer, device)
     del train_dataloader
