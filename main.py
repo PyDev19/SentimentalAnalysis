@@ -4,6 +4,13 @@ import torch
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+import torch_xla
+import torch_xla.debug.metrics as met
+import torch_xla.utils.utils as xu
+import torch_xla.core.xla_model as xm
+import torch_xla.distributed.xla_multiprocessing as xmp
+import torch_xla.test.test_utils as test_utils
+
 from tqdm import tqdm
 
 # from model import SentimentCNNBiLSTM
@@ -11,13 +18,20 @@ from transformer.transformer import Transformer
 from dataset import train_dataloader, val_dataloader, test_dataloader
 from train import train_epoch, eval_model, get_predictions
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(f"Using device: {device}")
+use_tpu = input('Use TPU? (y/n): ')
+use_tpu = use_tpu.lower() == 'y'
 
-if device == 'cpu':
-    torch.set_num_threads(16)
+if not use_tpu:
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using device: {device}")
+
+    if device == 'cpu':
+        torch.set_num_threads(16)
+    else:
+        torch.backends.cudnn.benchmark = True
 else:
-    torch.backends.cudnn.benchmark = True
+    device = xm.xla_device()
+    print(f"Using device: {device}")
     
 vocab = torch.load(f'models/vocab.pth')
 

@@ -5,11 +5,15 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from typing import Tuple, List
 from torch import nn, optim, Tensor
+import torch_xla.distributed.parallel_loader as pl
+import torch_xla.core.xla_model as xm
 
 def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device) -> Tuple[float, float]:    
     model.train()
     losses: List[float] = []
     correct_predictions: int = 0
+    
+    dataloader = pl.MpDeviceLoader(dataloader, device)
 
     for batch in tqdm(dataloader, desc='Training', leave=False):        
         input_ids = batch['input_ids'].to(device)
@@ -28,8 +32,9 @@ def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, op
         losses.append(loss.item())
 
         loss.backward()
-        # clip_grad_norm_(model.parameters(), max_norm=1.0)
-        optimizer.step()
+        clip_grad_norm_(model.parameters(), max_norm=1.0)
+        # optimizer.step()
+        xm.optimizer_step(optimizer)
 
         _, preds = torch.max(outputs, dim=1)
         correct_predictions += torch.sum(preds == labels)
@@ -42,6 +47,8 @@ def eval_model(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, dev
     model.eval()
     losses: List[float] = []
     correct_predictions: int = 0
+    
+    dataloader = pl.MpDeviceLoader(dataloader, device)
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='Validation', leave=False):
@@ -68,6 +75,8 @@ def get_predictions(model: nn.Module, dataloader: DataLoader, device: torch.devi
     model.eval()
     predictions: List[Tensor] = []
     real_values: List[Tensor] = []
+    
+    dataloader = pl.MpDeviceLoader(dataloader, device)
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='Testing', leave=False):
