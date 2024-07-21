@@ -3,6 +3,7 @@ import os
 import torch
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
+import torch_xla
 import torch_xla.distributed.parallel_loader as pl
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
@@ -12,6 +13,8 @@ from tqdm import tqdm
 from transformer.transformer import Transformer
 from dataset import train_dataloader, val_dataloader, test_dataloader
 from train import train_epoch, eval_model, get_predictions
+
+print(torch_xla._XLAC._xla_runtime_is_initialized())
 
 use_tpu = input('Use TPU? (y/n): ')
 use_tpu = use_tpu.lower() == 'y'
