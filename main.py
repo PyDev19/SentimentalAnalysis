@@ -46,7 +46,7 @@ def train():
     learning_rates = []
     
     epochs = int(input('Enter the number of epochs: '))
-    for epoch in tqdm(range(epochs), desc='Epochs', leave=True):
+    for epoch in range(epochs):
         train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device)
         print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
         train_losses.append(train_loss)
