@@ -25,9 +25,6 @@ def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, op
         outputs = outputs.contiguous().view(-1, 7)
         labels = labels.contiguous().view(-1)
         
-        print(outputs)
-        print(labels)
-        
         loss = loss_fn(outputs, labels)
         losses.append(loss.item())
 
