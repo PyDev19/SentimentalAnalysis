@@ -69,6 +69,9 @@ def train():
         'learning_rates': learning_rates
     }
     
+    if not os.path.exists('models'):
+        os.makedirs('models')
+    
     torch.save(model.state_dict(), 'models/model.pth')
     torch.save(optimizer.state_dict(), 'models/optimizer.pth')
     torch.save(history, 'models/history.pth')
