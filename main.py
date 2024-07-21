@@ -32,7 +32,8 @@ def train_tpu(rank, flags):
     
     LEARNING_RATE = 1e-4 * xm.xrt_world_size()
     
-    model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
+    model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device)
+    model = model.to(device)
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
     loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
     
