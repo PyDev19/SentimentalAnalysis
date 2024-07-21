@@ -62,31 +62,41 @@ val_losses = []
 val_accs = []
 learning_rates = []
 
-for epoch in tqdm(range(EPOCHS), desc='Epochs', leave=True):
-    train_dataloader = pl.ParallelLoader(train_dataloader, [device])
-    val_dataloader = pl.ParallelLoader(val_dataloader, [device])
-    
-    train_acc, train_loss = train_epoch(model, train_dataloader.per_device_loader(device), loss_fn, optimizer, device)
-    del train_dataloader
-    print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
-    train_losses.append(train_loss)
+def train_fn():
+    for epoch in tqdm(range(EPOCHS), desc='Epochs', leave=True):
+        train_dataloader = pl.ParallelLoader(train_dataloader, [device])
+        val_dataloader = pl.ParallelLoader(val_dataloader, [device])
+        
+        train_acc, train_loss = train_epoch(model, train_dataloader.per_device_loader(device), loss_fn, optimizer, device)
+        del train_dataloader
+        print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
+        train_losses.append(train_loss)
 
-    val_acc, val_loss = eval_model(model, val_dataloader.per_device_loader(device), loss_fn, device)
-    del val_dataloader
-    print(f'Val loss: {val_loss}, Accuracy: {val_acc}')
-    print()
+        val_acc, val_loss = eval_model(model, val_dataloader.per_device_loader(device), loss_fn, device)
+        del val_dataloader
+        print(f'Val loss: {val_loss}, Accuracy: {val_acc}')
+        print()
 
-    # scheduler.step(val_loss)
+        # scheduler.step(val_loss)
 
-    train_losses.append(train_loss)
-    train_accs.append(train_acc)
-    val_losses.append(val_loss)
-    val_accs.append(val_acc)
-    learning_rates.append(optimizer.param_groups[0]['lr'])
+        train_losses.append(train_loss)
+        train_accs.append(train_acc)
+        val_losses.append(val_loss)
+        val_accs.append(val_acc)
+        learning_rates.append(optimizer.param_groups[0]['lr'])
 
-predictions, true_labels = get_predictions(model, test_dataloader, device)
-accuracy = (predictions == true_labels).sum() / len(true_labels)
-print(f'Accuracy: {accuracy}')
+xm.spawn(train_fn, nprocs=8)
+
+def test_fn():
+    test_dataloader = pl.ParallelLoader(test_dataloader, [device])
+    accuracy = eval_model(model, test_dataloader.per_device_loader(device), loss_fn, device)
+    del test_dataloader
+    print(f'Test accuracy: {accuracy}')
+
+xm.spawn(test_fn, nprocs=8)
+
+model.to('cpu')
+optimizer.to('cpu')
 
 import os
 if not os.path.exists('models'):
