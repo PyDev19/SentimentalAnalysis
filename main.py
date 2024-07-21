@@ -85,7 +85,7 @@ def train_fn():
         val_accs.append(val_acc)
         learning_rates.append(optimizer.param_groups[0]['lr'])
 
-xm.spawn(train_fn, nprocs=8)
+xmp.spawn(train_fn, nprocs=8)
 
 def test_fn():
     test_dataloader = pl.ParallelLoader(test_dataloader, [device])
@@ -93,7 +93,7 @@ def test_fn():
     del test_dataloader
     print(f'Test accuracy: {accuracy}')
 
-xm.spawn(test_fn, nprocs=8)
+xmp.spawn(test_fn, nprocs=8)
 
 model.to('cpu')
 optimizer.to('cpu')
