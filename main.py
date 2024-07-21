@@ -7,6 +7,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch_xla
 import torch_xla.debug.metrics as met
 import torch_xla.utils.utils as xu
+import torch_xla.distributed.parallel_loader as pl
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
 import torch_xla.test.test_utils as test_utils
@@ -43,7 +44,7 @@ LAYERS = 6
 HIDDEN_DIMENSIONS = 2048
 MAX_SEQ_LEN = 209
 DROPOUT = 0.1
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-4 * xm.xrt_world_size()
 EPOCHS = 10
 
 # model = SentimentCNNBiLSTM(VOCAB_SIZE, EMBEDDING_DIM, CONV_FILTERS, LSTM_HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
@@ -62,11 +63,16 @@ val_accs = []
 learning_rates = []
 
 for epoch in tqdm(range(EPOCHS), desc='Epochs', leave=True):
-    train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device)
+    train_dataloader = pl.MpDeviceLoader(train_dataloader, [device])
+    val_dataloader = pl.MpDeviceLoader(val_dataloader, [device])
+    
+    train_acc, train_loss = train_epoch(model, train_dataloader.per_device_loader(device), loss_fn, optimizer, device)
+    del train_dataloader
     print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
     train_losses.append(train_loss)
 
-    val_acc, val_loss = eval_model(model, val_dataloader, loss_fn, device)
+    val_acc, val_loss = eval_model(model, val_dataloader.per_device_loader(device), loss_fn, device)
+    del val_dataloader
     print(f'Val loss: {val_loss}, Accuracy: {val_acc}')
     print()
 
