@@ -150,6 +150,6 @@ def normal_train():
 if __name__ == '__main__':
     if use_tpu:
         import torch_xla.distributed.xla_multiprocessing as xmp
-        xmp.spawn(train_and_test_tpu, nprocs=8, start_method='fork', args=({},))
+        xmp.spawn(train_and_test_tpu, args=({},))
     else:
         normal_train()
