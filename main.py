@@ -9,8 +9,7 @@ from tqdm import tqdm
 from transformer.transformer import Transformer
 from train import train_epoch, eval_model, get_predictions
 
-use_tpu = input('Use TPU? (y/n): ')
-use_tpu = use_tpu.lower() == 'y'
+use_tpu = True
     
 vocab = torch.load(f'models/vocab.pth')
 
