@@ -42,8 +42,6 @@ def eval_model(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, dev
     losses: List[float] = []
     correct_predictions: int = 0
     
-    dataloader = pl.MpDeviceLoader(dataloader, device)
-
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='Validation', leave=False):
             input_ids = batch['input_ids'].to(device)
@@ -70,8 +68,6 @@ def get_predictions(model: nn.Module, dataloader: DataLoader, device: torch.devi
     predictions: List[Tensor] = []
     real_values: List[Tensor] = []
     
-    dataloader = pl.MpDeviceLoader(dataloader, device)
-
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='Testing', leave=False):
             input_ids = batch['input_ids'].to(device)
