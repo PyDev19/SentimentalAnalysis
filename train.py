@@ -11,7 +11,7 @@ def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, op
     losses: List[float] = []
     correct_predictions: int = 0
 
-    for batch in tqdm(dataloader, desc='Training', leave=False):        
+    for batch in tqdm(dataloader, desc='Training', leave=True, position=0):        
         input_ids = batch['input_ids'].to(device)
         labels = batch['label'].to(device)
         
@@ -41,7 +41,7 @@ def eval_model(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, dev
     correct_predictions: int = 0
     
     with torch.no_grad():
-        for batch in tqdm(dataloader, desc='Validation', leave=False):
+        for batch in tqdm(dataloader, desc='Validation', leave=True, position=0):
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
 
