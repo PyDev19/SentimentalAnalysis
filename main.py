@@ -47,6 +47,9 @@ def train():
     
     epochs = int(input('Enter the number of epochs: '))
     for epoch in range(epochs):
+        print(f'Epoch {epoch + 1}/{epochs}')
+        print('-' * 10)
+        
         train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device)
         print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
         train_losses.append(train_loss)
