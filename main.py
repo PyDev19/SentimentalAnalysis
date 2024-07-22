@@ -21,7 +21,7 @@ FORWARD_EXPANSION = 4
 DROPOUT = 0.1
 MAX_LENGTH = 512
 NUM_CLASSES = 7
-LEARNING_RATE = 3e-4
+LEARNING_RATE = 0.001
 
 def train():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
