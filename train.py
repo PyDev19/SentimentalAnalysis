@@ -17,9 +17,7 @@ def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, op
         
         optimizer.zero_grad(set_to_none=True)
 
-        outputs = model(input_ids)
-        outputs = outputs.contiguous().view(-1, 7)
-        labels = labels.contiguous().view(-1)
+        outputs = model(input_ids, mask=None)
         
         loss = loss_fn(outputs, labels)
         losses.append(loss.item())
@@ -45,10 +43,7 @@ def eval_model(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, dev
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
 
-            outputs = model(input_ids)
-            outputs = outputs.contiguous()
-            outputs = outputs.view(-1, 7)
-            labels = labels.contiguous().view(-1)
+            outputs = model(input_ids, mask=None)
             
             _, preds = torch.max(outputs, dim=1)
             loss = loss_fn(outputs, labels)
@@ -71,7 +66,7 @@ def get_predictions(model: nn.Module, dataloader: DataLoader, device: torch.devi
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
             
-            outputs = model(input_ids)
+            outputs = model(input_ids, mask=None)
             
             _, preds = torch.softmax(outputs, dim=1)
 
