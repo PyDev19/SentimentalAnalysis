@@ -4,8 +4,6 @@ import torch
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 
-from tqdm import tqdm
-
 from transformer.transformer import Transformer
 from train import train_epoch, eval_model, get_predictions
 from dataset import train_dataloader, val_dataloader, test_dataloader
@@ -13,16 +11,17 @@ from dataset import train_dataloader, val_dataloader, test_dataloader
 use_tpu = True
     
 vocab = torch.load(f'models/vocab.pth')
+print(f'Vocab size: {len(vocab)}')
 
 VOCAB_SIZE = len(vocab)
-CLASSES = 7
-DIMENSIONS = 512
+EMBED_SIZE = 256
+NUM_LAYERS = 6
 HEADS = 8
-LAYERS = 6
-HIDDEN_DIMENSIONS = 2048
-MAX_SEQ_LEN = 209
+FORWARD_EXPANSION = 4
 DROPOUT = 0.1
-LEARNING_RATE = 1e-4
+MAX_LENGTH = 512
+NUM_CLASSES = 7
+LEARNING_RATE = 3e-4
 
 def train():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -35,7 +34,7 @@ def train():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
     
-    model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
+    model = Transformer(EMBED_SIZE, NUM_LAYERS, HEADS, device, FORWARD_EXPANSION, DROPOUT, MAX_LENGTH, VOCAB_SIZE, NUM_CLASSES).to(device)
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
     loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
     
@@ -90,7 +89,7 @@ def test():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
     
-    model = Transformer(VOCAB_SIZE, DIMENSIONS, HEADS, LAYERS, HIDDEN_DIMENSIONS, MAX_SEQ_LEN, CLASSES, DROPOUT, device).to(device)
+    model = Transformer(EMBED_SIZE, NUM_LAYERS, HEADS, device, FORWARD_EXPANSION, DROPOUT, MAX_LENGTH, VOCAB_SIZE, NUM_CLASSES).to(device)
     model.load_state_dict(torch.load('models/model.pth'))
     loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
         
