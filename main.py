@@ -3,6 +3,7 @@ import os
 import torch
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
+from torch.cuda.amp import GradScaler
 
 from transformer.transformer import Transformer
 from train import train_epoch, eval_model, get_predictions
@@ -37,6 +38,7 @@ def train():
     model = Transformer(EMBED_SIZE, NUM_LAYERS, HEADS, device, FORWARD_EXPANSION, DROPOUT, MAX_LENGTH, VOCAB_SIZE, NUM_CLASSES).to(device)
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
     loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
+    scaler = GradScaler()
     
     train_losses = []
     train_accs = []
@@ -49,7 +51,7 @@ def train():
         print(f'Epoch {epoch + 1}/{epochs}')
         print('-' * 10)
         
-        train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device)
+        train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device, scaler)
         print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
         train_losses.append(train_loss)
 

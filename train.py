@@ -5,8 +5,9 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from typing import Tuple, List
 from torch import nn, optim, Tensor
+from torch.cuda.amp import autocast
 
-def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device) -> Tuple[float, float]:    
+def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device, scaler) -> Tuple[float, float]:    
     model.train()
     losses: List[float] = []
     correct_predictions: int = 0
@@ -16,15 +17,17 @@ def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, op
         labels = batch['label'].to(device)
         
         optimizer.zero_grad(set_to_none=True)
-
-        outputs = model(input_ids, mask=None)
         
-        loss = loss_fn(outputs, labels)
+        with autocast():
+            outputs = model(input_ids, mask=None)
+            loss = loss_fn(outputs, labels)
+        
         losses.append(loss.item())
 
-        loss.backward()
+        scaler.scale(loss).backward()
         clip_grad_norm_(model.parameters(), max_norm=1.0)
-        optimizer.step()
+        scaler.step(optimizer)
+        scaler.update()
 
         _, preds = torch.max(outputs, dim=1)
         correct_predictions += torch.sum(preds == labels)
@@ -42,9 +45,11 @@ def eval_model(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, dev
         for batch in tqdm(dataloader, desc='Validation', leave=True, position=0):
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
-
-            outputs = model(input_ids, mask=None)
             
+            with autocast():  # Enable mixed precision during evaluation
+                outputs = model(input_ids, mask=None)
+                loss = loss_fn(outputs, labels)
+                        
             _, preds = torch.max(outputs, dim=1)
             loss = loss_fn(outputs, labels)
 
@@ -66,7 +71,9 @@ def get_predictions(model: nn.Module, dataloader: DataLoader, device: torch.devi
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
             
-            outputs = model(input_ids, mask=None)
+            with autocast():
+                outputs = model(input_ids, mask=None)
+                _, preds = torch.max(outputs, dim=1)
             
             _, preds = torch.softmax(outputs, dim=1)
 
