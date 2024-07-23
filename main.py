@@ -35,13 +35,13 @@ def train():
         torch.backends.cudnn.benchmark = True
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
+        scaler = GradScaler()
     
     epochs = int(input('Enter the number of epochs: '))
     
     model = Transformer(EMBED_SIZE, NUM_LAYERS, HEADS, device, FORWARD_EXPANSION, DROPOUT, MAX_LENGTH, VOCAB_SIZE, NUM_CLASSES).to(device)
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
     loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
-    scaler = GradScaler()
     scheduler = CosineAnnealingLR(optimizer, T_max=epochs)
     
     train_losses = []
@@ -54,7 +54,10 @@ def train():
         print(f'Epoch {epoch + 1}/{epochs}')
         print('-' * 10)
         
-        train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device, scaler, scheduler)
+        if device == 'cpu':
+            train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device, scheduler)
+        else:
+            train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device, scaler, scheduler)
         print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
         train_losses.append(train_loss)
 

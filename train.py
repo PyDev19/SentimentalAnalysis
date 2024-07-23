@@ -7,7 +7,7 @@ from typing import Tuple, List
 from torch import nn, optim, Tensor
 from torch.cuda.amp import autocast
 
-def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device, scaler, scheduler) -> Tuple[float, float]:    
+def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device, scheduler, scaler=None) -> Tuple[float, float]:    
     model.train()
     losses: List[float] = []
     correct_predictions: int = 0
@@ -18,16 +18,25 @@ def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, op
         
         optimizer.zero_grad(set_to_none=True)
         
-        with autocast():
+        if scaler is not None:
+            with autocast():
+                outputs = model(input_ids, mask=None)
+                loss = loss_fn(outputs, labels)
+        else:
             outputs = model(input_ids, mask=None)
             loss = loss_fn(outputs, labels)
         
         losses.append(loss.item())
 
-        scaler.scale(loss).backward()
-        clip_grad_norm_(model.parameters(), max_norm=1.0)
-        scaler.step(optimizer)
-        scaler.update()
+        if scaler is None:
+            loss.backward()
+            clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+        else:
+            scaler.scale(loss).backward()
+            clip_grad_norm_(model.parameters(), max_norm=1.0)
+            scaler.step(optimizer)
+            scaler.update()
 
         _, preds = torch.max(outputs, dim=1)
         correct_predictions += torch.sum(preds == labels)
@@ -48,7 +57,11 @@ def eval_model(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, dev
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
             
-            with autocast():  # Enable mixed precision during evaluation
+            if device.type == 'cuda':
+                with autocast():  # Enable mixed precision during evaluation
+                    outputs = model(input_ids, mask=None)
+                    loss = loss_fn(outputs, labels)
+            else:
                 outputs = model(input_ids, mask=None)
                 loss = loss_fn(outputs, labels)
                         
@@ -73,9 +86,12 @@ def get_predictions(model: nn.Module, dataloader: DataLoader, device: torch.devi
             input_ids = batch['input_ids'].to(device)
             labels = batch['label'].to(device)
             
-            with autocast():
+            if device.type == 'cuda':
+                with autocast():
+                    outputs = model(input_ids, mask=None)
+                    _, preds = torch.max(outputs, dim=1)
+            else:
                 outputs = model(input_ids, mask=None)
-                _, preds = torch.max(outputs, dim=1)
             
             _, preds = torch.softmax(outputs, dim=1)
 
