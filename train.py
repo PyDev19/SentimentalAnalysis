@@ -7,7 +7,7 @@ from typing import Tuple, List
 from torch import nn, optim, Tensor
 from torch.cuda.amp import autocast
 
-def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device, scaler) -> Tuple[float, float]:    
+def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, device: torch.device, scaler, scheduler) -> Tuple[float, float]:    
     model.train()
     losses: List[float] = []
     correct_predictions: int = 0
@@ -31,6 +31,8 @@ def train_epoch(model: nn.Module, dataloader: DataLoader, loss_fn: nn.Module, op
 
         _, preds = torch.max(outputs, dim=1)
         correct_predictions += torch.sum(preds == labels)
+    
+    scheduler.step()
 
     accuracy = correct_predictions.double() / len(dataloader.dataset)
     average_loss = np.mean(losses)
