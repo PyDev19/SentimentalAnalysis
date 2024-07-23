@@ -77,6 +77,18 @@ def train():
         'learning_rates': learning_rates
     }
     
+    hyper_params = {
+        'VOCAB_SIZE': VOCAB_SIZE,
+        'EMBED_SIZE': EMBED_SIZE,
+        'NUM_LAYERS': NUM_LAYERS,
+        'HEADS': HEADS,
+        'FORWARD_EXPANSION': FORWARD_EXPANSION,
+        'DROPOUT': DROPOUT,
+        'MAX_LENGTH': MAX_LENGTH,
+        'NUM_CLASSES': NUM_CLASSES,
+        'LEARNING_RATE': LEARNING_RATE
+    }
+    
     if not os.path.exists('models'):
         os.makedirs('models')
     
@@ -84,6 +96,7 @@ def train():
     torch.save(model, 'models/model.pth')
     torch.save(optimizer.state_dict(), 'models/optimizer.pth')
     torch.save(history, 'models/history.pth')
+    torch.Save(hyper_params, 'models/hyper_params.pth')
 
 def test():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
