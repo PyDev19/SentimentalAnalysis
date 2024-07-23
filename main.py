@@ -36,6 +36,8 @@ def train():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
     
+    epochs = int(input('Enter the number of epochs: '))
+    
     model = Transformer(EMBED_SIZE, NUM_LAYERS, HEADS, device, FORWARD_EXPANSION, DROPOUT, MAX_LENGTH, VOCAB_SIZE, NUM_CLASSES).to(device)
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.98), eps=1e-9)
     loss_fn = CrossEntropyLoss(ignore_index=0).to(device)
@@ -48,7 +50,6 @@ def train():
     val_accs = []
     learning_rates = []
     
-    epochs = int(input('Enter the number of epochs: '))
     for epoch in range(epochs):
         print(f'Epoch {epoch + 1}/{epochs}')
         print('-' * 10)
