@@ -89,11 +89,10 @@ def get_predictions(model: nn.Module, dataloader: DataLoader, device: torch.devi
             if device == 'cuda':
                 with autocast():
                     outputs = model(input_ids, mask=None)
-                    _, preds = torch.max(outputs, dim=1)
+                    _, preds = torch.softmax(outputs, dim=1)
             else:
                 outputs = model(input_ids, mask=None)
-            
-            _, preds = torch.softmax(outputs, dim=1)
+                _, preds = torch.softmax(outputs, dim=1)
 
             predictions.extend(preds)
             real_values.extend(labels)
