@@ -16,7 +16,7 @@ vocab = torch.load(f'models/vocab.pth')
 print(f'Vocab size: {len(vocab)}')
 
 VOCAB_SIZE = len(vocab)
-EMBED_SIZE = 256
+EMBED_SIZE = 512
 NUM_LAYERS = 6
 HEADS = 8
 FORWARD_EXPANSION = 4
