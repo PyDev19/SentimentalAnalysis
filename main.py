@@ -9,8 +9,6 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from transformer.transformer import Transformer
 from train import train_epoch, eval_model, get_predictions
 from dataset import train_dataloader, val_dataloader, test_dataloader
-
-use_tpu = True
     
 vocab = torch.load(f'models/vocab.pth')
 print(f'Vocab size: {len(vocab)}')
