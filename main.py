@@ -57,7 +57,7 @@ def train():
         if device == 'cpu':
             train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device, scheduler)
         else:
-            train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device, scaler, scheduler)
+            train_acc, train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device, scheduler, scaler)
         print(f'Train loss: {train_loss}, Accuracy: {train_acc}')
         train_losses.append(train_loss)
 
